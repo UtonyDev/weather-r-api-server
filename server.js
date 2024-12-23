@@ -11,8 +11,9 @@ const PORT = 3002;  // You can change this PORT if needed
 // Middleware
 app.use(cors());
 
-// Create Redis client
-const redisClient = redis.createClient();
+const redisClient = redis.createClient({
+  url: `redis://:${process.env.REDIS_PASSWORD}@${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`
+});
 
 redisClient.on('error', (err) => {
   console.error('Redis error:', err);
