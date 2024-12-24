@@ -37,22 +37,25 @@ app.get('/api/weather', async (req, res) => {
   }
 
   const cacheKey = `${city}:${country}`;
+  console.log('Received request for:', cacheKey);
 
   try {
-    // Check Redis cache
+    console.log('Checking Redis cache for key:', cacheKey);
     const cachedData = await redisClient.get(cacheKey);
+
     if (cachedData) {
-      console.log('Cache hit');
+      console.log('Cache hit:', cacheKey);
       return res.json(JSON.parse(cachedData));
     }
 
-    // Fetch data from Visual Crossing API
+    console.log('Fetching data from Visual Crossing API...');
     const response = await axios.get(
-      `https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${city},${country}?key=${process.env.WEATHER_API_KEY}`
+      `https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${city},${country}?key=${apiKey}`
     );
     const weatherData = response.data;
+    console.log('Weather data fetched successfully:', weatherData);
 
-    // Store in Redis cache with a TTL of 1 hour
+    console.log('Saving data to Redis...');
     await redisClient.setEx(cacheKey, 3600, JSON.stringify(weatherData));
     console.log('Data saved successfully.');
 
@@ -61,9 +64,4 @@ app.get('/api/weather', async (req, res) => {
     console.error('Error fetching weather data:', error.message);
     res.status(500).json({ error: 'Error fetching weather data' });
   }
-});
-
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
 });
