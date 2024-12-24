@@ -4,7 +4,6 @@ const express = require('express');
 const axios = require('axios');
 const redis = require('redis');
 const cors = require('cors');
-
 const app = express();
 const PORT = 3000; // You can adjust this as needed
 
@@ -17,7 +16,6 @@ const redisClient = redis.createClient({
     host: process.env.REDIS_HOST,
     port: process.env.REDIS_PORT,
   },
-  password: process.env.REDIS_PASSWORD || undefined, // Include password only if set
 });
 
 redisClient.on('error', (err) => {
