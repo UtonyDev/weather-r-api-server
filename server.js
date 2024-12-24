@@ -1,18 +1,17 @@
 require('dotenv').config();
-
+const redis = require('redis');
 const express = require('express');
 const axios = require('axios');
-const redis = require('redis');
 const cors = require('cors');
 
 const app = express();
-const PORT = 3002;  // You can change this PORT if needed
-
-// Middleware
 app.use(cors());
 
+// Connect to Redis
 const redisClient = redis.createClient({
-  url: `redis://:${process.env.REDIS_PASSWORD}@${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`
+  url: process.env.REDIS_PASSWORD
+    ? `redis://:${process.env.REDIS_PASSWORD}@${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`
+    : `redis://${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`
 });
 
 redisClient.on('error', (err) => {
@@ -21,45 +20,42 @@ redisClient.on('error', (err) => {
 
 redisClient.connect();
 
+// Weather API Endpoint
 const apiKey = process.env.WEATHER_API_KEY;
-// Define the weather API endpoint
+
 app.get('/api/weather', async (req, res) => {
   const { city, country } = req.query;
 
   if (!city || !country) {
     return res.status(400).json({ error: 'City and country are required' });
   }
-    const cacheKey = `${city}:${country}`;
+
+  const cacheKey = `${city}:${country}`;
 
   try {
-
-    // Check if data exists in Redis
+    // Check cache
     const cachedData = await redisClient.get(cacheKey);
     if (cachedData) {
       console.log('Cache hit');
-      return res.json(JSON.parse(cachedData)); // Return cached response
+      return res.json(JSON.parse(cachedData));
     }
 
-    // Fetch data from Visual Crossing API
+    // Fetch from API
     const response = await axios.get(
       `https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${city},${country}?key=${apiKey}`
     );
+
     const weatherData = response.data;
-
-    // Store the response in Redis with a TTL (e.g., 3600 seconds = 1 hour)
-    await redisClient.setEx(cacheKey, 3600, JSON.stringify(weatherData));
-    console.log('Data saved successfully.');
-
-    // Return the API response
+    await redisClient.setEx(cacheKey, 3600, JSON.stringify(weatherData)); // Cache for 1 hour
     res.json(weatherData);
-    
-  } catch (error) {
-    console.error(error);
+
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'Error fetching weather data' });
   }
 });
 
-// Start the server
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
