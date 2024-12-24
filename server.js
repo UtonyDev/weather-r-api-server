@@ -9,9 +9,12 @@ app.use(cors());
 
 // Connect to Redis
 const redisClient = redis.createClient({
-  url: process.env.REDIS_PASSWORD
-    ? `redis://:${process.env.REDIS_PASSWORD}@${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`
-    : `redis://${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`
+  url: `redis://${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`
+});
+
+console.log('Redis Config:', {
+  host: process.env.REDIS_HOST,
+  port: process.env.REDIS_PORT,
 });
 
 redisClient.on('error', (err) => {
